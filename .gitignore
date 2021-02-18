@@ -1,0 +1,16 @@
+.idea
+.cache
+.vscode
+.gradle
+gradle
+build
+node_modules
+cdk.out
+
+*.js
+*.d.ts
+
+.cdk.staging
+cdk.context.json
+cdk.json
+package-lock.json

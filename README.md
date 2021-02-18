@@ -1,1 +1,1 @@
-# learning-dynamodb
+# Learning DynamoDB

@@ -1,0 +1,199 @@
+[
+    {
+        "sk": {
+            "S": "PROD#Prod2"
+        },
+        "gsi1sk": {
+            "S": "Product 2"
+        },
+        "pk": {
+            "S": "PROD#Prod2"
+        },
+        "Data": {
+            "N": "9.25"
+        },
+        "gsi1pk": {
+            "S": "CAT#Category2"
+        }
+    },
+    {
+        "gsi1sk": {
+            "S": "2020-01-14'T'09:12:51"
+        },
+        "DateDelivered": {
+            "S": "2020-01-16'T'10:05:14"
+        },
+        "Data": {
+            "N": "50"
+        },
+        "sk": {
+            "S": "ORDER#OrderId2"
+        },
+        "CustomerEmail": {
+            "S": "c1@mail.com"
+        },
+        "pk": {
+            "S": "ORDER#OrderId2"
+        },
+        "gsi1pk": {
+            "S": "ORDER#DELIVERED#2020_1"
+        }
+    },
+    {
+        "gsi1sk": {
+            "S": "2020-01-14'T'09:12:51"
+        },
+        "Data": {
+            "N": "10"
+        },
+        "Price": {
+            "S": "5"
+        },
+        "sk": {
+            "S": "PROD#Prod1"
+        },
+        "pk": {
+            "S": "ORDER#OrderId2"
+        },
+        "gsi1pk": {
+            "S": "PROD#Prod1"
+        },
+        "Name": {
+            "S": "Product 1"
+        }
+    },
+    {
+        "sk": {
+            "S": "PROD#Prod1"
+        },
+        "gsi1sk": {
+            "S": "Product 1"
+        },
+        "pk": {
+            "S": "PROD#Prod1"
+        },
+        "Data": {
+            "N": "5"
+        },
+        "gsi1pk": {
+            "S": "CAT#Category1"
+        }
+    },
+    {
+        "sk": {
+            "S": "ORDER#OrderId1"
+        },
+        "gsi1sk": {
+            "S": "2020-01-25'T'12:40:02"
+        },
+        "CustomerEmail": {
+            "S": "c1@mail.com"
+        },
+        "pk": {
+            "S": "ORDER#OrderId1"
+        },
+        "Data": {
+            "N": "19.25"
+        },
+        "gsi1pk": {
+            "S": "ORDER#OPEN"
+        }
+    },
+    {
+        "gsi1sk": {
+            "S": "2020-01-25'T'12:40:02"
+        },
+        "Data": {
+            "N": "2"
+        },
+        "Price": {
+            "S": "5"
+        },
+        "sk": {
+            "S": "PROD#Prod1"
+        },
+        "pk": {
+            "S": "ORDER#OrderId1"
+        },
+        "gsi1pk": {
+            "S": "PROD#Prod1"
+        },
+        "Name": {
+            "S": "Product 1"
+        }
+    },
+    {
+        "gsi1sk": {
+            "S": "2020-01-25'T'12:40:02"
+        },
+        "Data": {
+            "N": "1"
+        },
+        "Price": {
+            "S": "9.25"
+        },
+        "sk": {
+            "S": "PROD#Prod2"
+        },
+        "pk": {
+            "S": "ORDER#OrderId1"
+        },
+        "gsi1pk": {
+            "S": "PROD#Prod2"
+        },
+        "Name": {
+            "S": "Product 2"
+        }
+    },
+    {
+        "StreetAddress": {
+            "S": "Sixth Street, 51"
+        },
+        "sk": {
+            "S": "CUST#John Doe"
+        },
+        "pk": {
+            "S": "CUST#c1@mail.com"
+        },
+        "Data": {
+            "N": "2"
+        },
+        "gsi1pk": {
+            "S": "CUST_ADR#USA#TX#Austin"
+        }
+    },
+    {
+        "sk": {
+            "S": "ORDER#DELIVERED#OrderId2"
+        },
+        "gsi1sk": {
+            "S": "2020-01-14'T'09:12:51"
+        },
+        "pk": {
+            "S": "CUST#c1@mail.com"
+        },
+        "Data": {
+            "N": "50"
+        },
+        "gsi1pk": {
+            "S": "ORDER#OrderId2"
+        }
+    },
+    {
+        "sk": {
+            "S": "ORDER#OPEN#OrderId1"
+        },
+        "gsi1sk": {
+            "S": "2020-01-25'T'12:40:02"
+        },
+        "pk": {
+            "S": "CUST#c1@mail.com"
+        },
+        "Data": {
+            "N": "19.25"
+        },
+        "gsi1pk": {
+            "S": "ORDER#OrderId1"
+        }
+    }
+]
