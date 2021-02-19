@@ -50,13 +50,13 @@ val cdkContextOptions = configProp.flatMap {
 
 tasks.register<NpmTask>("synth") {
     description = "Synth the stack"
-    dependsOn(build)
+    dependsOn(build, ":market-api:quarkusBuild")
     setArgs(listOf("run", "cdk", "--", "synth") + cdkContextOptions)
 }
 
 tasks.register<NpmTask>("deploy") {
     description = "Deploy the stack"
-    dependsOn(build)
+    dependsOn(build, ":market-api:quarkusBuild")
     setArgs(listOf("run", "cdk", "--", "deploy", "--require-approval=never") + cdkContextOptions)
 }
 
