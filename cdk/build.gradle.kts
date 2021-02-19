@@ -63,6 +63,6 @@ tasks.register<NpmTask>("deploy") {
 tasks.register<NpmTask>("seed-data") {
     description = "Import test data"
     dependsOn(build)
-    setArgs(listOf("run", "dynamodb-import", "--", "--jsonFile", "seed-data.json",
+    setArgs(listOf("run", "dynamodb-import", "--", "--jsonFile", "$projectDir/seed-data.json",
         "--tableName", "LearningDynamoDb-$stackEnv", "--regionName", awsRegion))
 }
