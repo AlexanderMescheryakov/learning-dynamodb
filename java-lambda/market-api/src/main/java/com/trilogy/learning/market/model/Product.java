@@ -10,7 +10,8 @@ import java.math.BigDecimal;
 @Builder
 @RegisterForReflection
 public class Product {
+    String id;
     String name;
     BigDecimal price;
-    Integer quantity;
+    String category;
 }

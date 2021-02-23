@@ -17,9 +17,9 @@ dependencies {
     implementation("io.quarkus:quarkus-arc")
     implementation(platform("software.amazon.awssdk:bom:2.15.53"))
     implementation("software.amazon.awssdk:dynamodb")
-    implementation("software.amazon.awssdk:apigateway")
     implementation("commons-logging:commons-logging:1.2")
     implementation("joda-time:joda-time:2.10.10")
+    implementation("com.amirkhawaja:ksuid:1.0.0")
     compileOnly("org.projectlombok:lombok:1.18.16")
     annotationProcessor("org.projectlombok:lombok:1.18.16")
 

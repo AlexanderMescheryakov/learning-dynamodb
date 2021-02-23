@@ -11,4 +11,5 @@ public class Customer {
     String email;
     String name;
     Address address;
+    Integer orderCount;
 }

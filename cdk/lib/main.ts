@@ -18,5 +18,8 @@ const stack = new AppStack(app, `learning-dynamodb-${deploymentEnv}`, {
 });
 
 stack.defineRestApi('GET', '/orders', 'get-orders');
+stack.defineRestApi('GET', '/order', 'get-order');
+stack.defineRestApi('POST', '/order', 'add-order');
+stack.defineRestApi('PUT', '/order', 'update-order');
 
 app.synth();
