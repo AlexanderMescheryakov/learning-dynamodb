@@ -7,8 +7,8 @@
     "gsi1pk": "CAT#Category2"
   },
   {
-    "gsi1sk": "2020-01-14'T'09:12:51",
-    "DateDelivered": "2020-01-16'T'10:05:14",
+    "gsi1sk": "2020-01-14T09:12:51",
+    "DateDelivered": "2020-01-16T10:05:14",
     "Data": 50,
     "sk": "ORDER#OrderId2",
     "CustomerEmail": "c1@mail.com",
@@ -16,9 +16,9 @@
     "gsi1pk": "ORDER#DELIVERED#2020_1"
   },
   {
-    "gsi1sk": "2020-01-14'T'09:12:51",
+    "gsi1sk": "ORDER#OrderId2",
     "Data": 10,
-    "Price": "5",
+    "Price": 5,
     "sk": "PROD#Prod1",
     "pk": "ORDER#OrderId2",
     "gsi1pk": "PROD#Prod1",
@@ -33,25 +33,25 @@
   },
   {
     "sk": "ORDER#OrderId1",
-    "gsi1sk": "2020-01-25'T'12:40:02",
+    "gsi1sk": "2020-01-25T12:40:02",
     "CustomerEmail": "c1@mail.com",
     "pk": "ORDER#OrderId1",
     "Data": 19.25,
     "gsi1pk": "ORDER#OPEN"
   },
   {
-    "gsi1sk": "2020-01-25'T'12:40:02",
+    "gsi1sk": "ORDER#OrderId1",
     "Data": 2,
-    "Price": "5",
+    "Price": 5,
     "sk": "PROD#Prod1",
     "pk": "ORDER#OrderId1",
     "gsi1pk": "PROD#Prod1",
     "Name": "Product 1"
   },
   {
-    "gsi1sk": "2020-01-25'T'12:40:02",
+    "gsi1sk": "ORDER#OrderId1",
     "Data": 1,
-    "Price": "9.25",
+    "Price": 9.25,
     "sk": "PROD#Prod2",
     "pk": "ORDER#OrderId1",
     "gsi1pk": "PROD#Prod2",
@@ -59,21 +59,22 @@
   },
   {
     "StreetAddress": "Sixth Street, 51",
-    "sk": "CUST#John Doe",
+    "sk": "CUST#c1@mail.com",
+    "gsi1sk": "CUST#John Doe",
     "pk": "CUST#c1@mail.com",
     "Data": 2,
     "gsi1pk": "CUST_ADR#USA#TX#Austin"
   },
   {
     "sk": "ORDER#DELIVERED#OrderId2",
-    "gsi1sk": "2020-01-14'T'09:12:51",
+    "gsi1sk": "2020-01-14T09:12:51",
     "pk": "CUST#c1@mail.com",
     "Data": 50,
     "gsi1pk": "ORDER#OrderId2"
   },
   {
     "sk": "ORDER#OPEN#OrderId1",
-    "gsi1sk": "2020-01-25'T'12:40:02",
+    "gsi1sk": "2020-01-25T12:40:02",
     "pk": "CUST#c1@mail.com",
     "Data": 19.25,
     "gsi1pk": "ORDER#OrderId1"
