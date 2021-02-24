@@ -1,14 +1,15 @@
 package com.trilogy.learning.market.requests;
 
 import io.quarkus.runtime.annotations.RegisterForReflection;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NonNull;
+import lombok.*;
 
 @Data
-@Builder
 @RegisterForReflection
-public class NewOrderedProduct {
+@NoArgsConstructor
+public class NewCustomerRequest {
     @NonNull
-    Integer quantity;
+    String customerEmail;
+
+    @NonNull
+    String Name;
 }

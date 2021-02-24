@@ -39,6 +39,7 @@ tasks.register<NpmTask>("clean") {
 
 val deploymentConfig: String by project
 val stackEnv: String by project
+val jvmRuntime = project.properties["quarkus.package.type"];
 val deploymentConfigStream = java.io.FileInputStream(deploymentConfig)
 val configPropDefaults = java.util.Properties()
 configPropDefaults.setProperty("region", "us-east-1")
@@ -46,7 +47,7 @@ val configProp = java.util.Properties(configPropDefaults)
 configProp.load(deploymentConfigStream)
 val awsRegion = configProp.getProperty("region")
 val cdkContextOptions = configProp.flatMap {
-    (key, value) -> listOf("-c", "${key}=${value}")} + listOf("-c", "env=$stackEnv")
+    (key, value) -> listOf("-c", "${key}=${value}")} + listOf("-c", "env=$stackEnv") + listOf("-c", "jvmRuntime=$jvmRuntime")
 
 tasks.register<NpmTask>("synth") {
     description = "Synth the stack"

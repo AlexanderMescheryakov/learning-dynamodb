@@ -1,5 +1,6 @@
 package com.trilogy.learning.market.model;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 import lombok.Builder;
@@ -20,10 +21,18 @@ public class Order {
     }
 
     String id;
+
     Status status;
+
     BigDecimal total;
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     Date createdAt;
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     Date deliveredAt;
+
     String customerEmail;
+
     List<OrderedProduct> products;
 }

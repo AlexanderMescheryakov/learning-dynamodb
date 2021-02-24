@@ -1,17 +1,21 @@
 package com.trilogy.learning.market.model;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.quarkus.runtime.annotations.RegisterForReflection;
-import lombok.Builder;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 
 @Data
-@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 @RegisterForReflection
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class Product {
-    String id;
-    String name;
-    BigDecimal price;
-    String category;
+    private String id;
+    private String name;
+    private BigDecimal price;
+    private String category;
 }

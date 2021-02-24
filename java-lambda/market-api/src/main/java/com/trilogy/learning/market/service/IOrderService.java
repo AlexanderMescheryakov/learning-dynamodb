@@ -1,9 +1,10 @@
 package com.trilogy.learning.market.service;
 
-import com.trilogy.learning.market.requests.NewOrder;
+import com.trilogy.learning.market.model.Order;
+import com.trilogy.learning.market.requests.NewOrderRequest;
 
 import java.io.IOException;
 
 public interface IOrderService {
-    void addOrder(NewOrder orderRequest) throws IOException;
+    Order addOrder(NewOrderRequest orderRequest) throws IOException;
 }

@@ -1,6 +1,7 @@
 package com.trilogy.learning.market.repository;
 
 import com.trilogy.learning.market.model.Order;
+import com.trilogy.learning.market.requests.UpdateOrderRequest;
 
 import java.util.List;
 
@@ -11,9 +12,13 @@ public interface IOrderRepository {
 
     List<Order> getByCustomerEmail(String email);
 
-    public void addOrder(Order order);
+    List<Order> getByProductId(String productId);
 
-    public void updateOrder(Order order);
+    List<Order> getByStatus(Order.Status status, String month);
 
-    public void deleteOrder(String id);
+    void addOrder(Order order);
+
+    Order updateOrder(UpdateOrderRequest order);
+
+    Order deleteOrder(String id);
 }

@@ -2,8 +2,6 @@ package com.trilogy.learning.market.repository.dynamodb;
 
 import java.math.BigDecimal;
 import java.util.*;
-import lombok.AllArgsConstructor;
-import lombok.RequiredArgsConstructor;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.joda.time.DateTime;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
@@ -12,28 +10,23 @@ import software.amazon.awssdk.services.dynamodb.model.*;
 import javax.inject.Inject;
 
 public abstract class AbstractRepository<T> {
-    //private static final String TABLE_NAME_ENV_VAR = "DYNAMODB_TABLE";
-    //private static final String DEFAULT_TABLE_NAME = "Table";
+    public static final String SEP = "#";
+
     protected static final String PK_ATTRIBUTE= "pk";
     protected static final String SK_ATTRIBUTE = "sk";
+    protected static final String GSI1 = "gsi1";
     protected static final String GSI1_PK_ATTRIBUTE= "gsi1pk";
     protected static final String GSI1_SK_ATTRIBUTE = "gsi1sk";
     protected static final String DATA_ATTRIBUTE = "Data";
 
-    //private final String tableName = Optional.ofNullable(System.getenv(TABLE_NAME_ENV_VAR)).orElse(DEFAULT_TABLE_NAME);
-
     protected final DynamoDbClient dynamoDbClient;
-
-    @Inject
-    @ConfigProperty(name = "dynamodb.table")
-    private String tableName;
 
     protected AbstractRepository(DynamoDbClient dynamoClient) {
         dynamoDbClient = dynamoClient;
     }
 
     public String getTableName() {
-        return tableName;
+        return System.getenv("DYNAMODB_TABLE");
     }
 
     protected GetItemResponse getItem(String id) {
@@ -132,10 +125,16 @@ public abstract class AbstractRepository<T> {
         return query(keyConditions);
     }
 
-    protected QueryResponse queryPartition(String keyAttribute, String key) {
+    protected QueryResponse queryPartition(String key) {
         final var keyConditions = new HashMap<String, Condition>();
-        keyConditions.put(keyAttribute, getCondition(ComparisonOperator.EQ, key));
+        keyConditions.put(PK_ATTRIBUTE, getCondition(ComparisonOperator.EQ, key));
         return query(keyConditions);
+    }
+
+    protected QueryResponse queryGsi1Partition(String key) {
+        final var keyConditions = new HashMap<String, Condition>();
+        keyConditions.put(GSI1_PK_ATTRIBUTE, getCondition(ComparisonOperator.EQ, key));
+        return queryGsi1(keyConditions);
     }
 
     protected Condition getCondition(ComparisonOperator operator, String value) {
@@ -319,6 +318,15 @@ public abstract class AbstractRepository<T> {
         final var request = QueryRequest.builder()
                 .tableName(getTableName())
                 .keyConditions(keyConditions)
+                .build();
+        return dynamoDbClient.query(request);
+    }
+
+    private QueryResponse queryGsi1(Map<String, Condition> keyConditions) {
+        final var request = QueryRequest.builder()
+                .tableName(getTableName())
+                .keyConditions(keyConditions)
+                .indexName(GSI1)
                 .build();
         return dynamoDbClient.query(request);
     }

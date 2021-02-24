@@ -2,6 +2,8 @@ package com.trilogy.learning.market.service;
 
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import software.amazon.awssdk.http.urlconnection.UrlConnectionHttpClient;
+import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Produces;
 import java.util.Optional;
@@ -16,6 +18,8 @@ public class AwsClientFactory {
     public DynamoDbClient getDynamoDbClient() {
         return DynamoDbClient.builder()
                 .region(Region.of(regionName))
+                .httpClientBuilder(UrlConnectionHttpClient.builder())
+                .credentialsProvider(EnvironmentVariableCredentialsProvider.create())
                 .build();
     }
 }

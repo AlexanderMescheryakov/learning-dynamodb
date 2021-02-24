@@ -3,7 +3,9 @@ package com.trilogy.learning.market.repository.dynamodb;
 import com.trilogy.learning.market.model.Order;
 import com.trilogy.learning.market.model.OrderedProduct;
 import com.trilogy.learning.market.repository.IOrderRepository;
+import com.trilogy.learning.market.requests.UpdateOrderRequest;
 import lombok.extern.jbosslog.JBossLog;
+import org.joda.time.DateTime;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.GetItemResponse;
@@ -15,7 +17,7 @@ import java.util.*;
 @JBossLog
 @Singleton
 public class OrderRepository extends AbstractRepository<Order> implements IOrderRepository {
-    private static final String KEY_PREFIX = "ORDER#";
+    static final String KEY_PREFIX = "ORDER#";
     // Order Entity
     private static final String CUSTOMER_EMAIL_ATTRIBUTE = "CustomerEmail";
     private static final String DATE_DELIVERED_ATTRIBUTE = "DateDelivered";
@@ -48,8 +50,8 @@ public class OrderRepository extends AbstractRepository<Order> implements IOrder
 
     @Override
     public Order getByIdDetails(String id) {
-        final var response = queryPartition(PK_ATTRIBUTE, KEY_PREFIX + id);
-        return getOrderDetailsFromResponse(response, id);
+        final var response = queryPartition(KEY_PREFIX + id);
+        return getOrderDetailsFromResponse(response);
     }
 
     @Override
@@ -60,22 +62,59 @@ public class OrderRepository extends AbstractRepository<Order> implements IOrder
     }
 
     @Override
+    public List<Order> getByProductId(String productId) {
+        final var response = queryGsi1Partition(ProductRepository.KEY_PREFIX + productId);
+        return getOrdersFromResponse(response);
+    }
+
+    @Override
+    public List<Order> getByStatus(Order.Status status, String month) {
+        var key = KEY_PREFIX + status.toString();
+        if (month != null && month.length() > 0) {
+            key += SEP + month;
+        }
+
+        final var response = queryGsi1Partition(key);
+        return getOrdersFromResponse(response);
+    }
+
+    @Override
     public void addOrder(Order order) {
-        var items = getItemsFromOrderDetails(order);
+        final var items = getItemsFromOrderDetails(order);
         putItems(items);
     }
 
     @Override
-    public void updateOrder(Order order) {
-        var updateExpression = "SET " + STATUS_ATTRIBUTE + "=:status";
-        var updateValues = new HashMap<String, AttributeValue>();
-        updateValues.put(":status", AttributeValue.builder().s(KEY_PREFIX + order.getStatus().toString()).build());
-        updateItem(getOrderKey(order.getId()), updateExpression, null, updateValues);
+    public Order updateOrder(UpdateOrderRequest order) {
+        final var updateValues = new HashMap<String, AttributeValue>();
+        String updateExpression = "";
+        if (order.getStatus() != null) {
+            updateExpression += "SET " + STATUS_ATTRIBUTE + "=:status";
+            var value = KEY_PREFIX + order.getStatus().toString();
+            if (order.getStatus() == Order.Status.DELIVERED) {
+                var date = DateTime.now();
+                value += date.toString("yyyy_MM");
+
+                updateValues.put(":dateDelivered", AttributeValue.builder()
+                        .s(date.toString("yyyy-MM-dd'T'HH:mm:ss")).build());
+                updateExpression += ", " + DATE_DELIVERED_ATTRIBUTE + "=:dateDelivered";
+            }
+
+            updateValues.put(":status", AttributeValue.builder().s(value).build());
+        }
+
+        if (updateValues.size() > 0) {
+            final var response = updateItem(getOrderKey(order.getId()), updateExpression, null, updateValues);
+            return getOrderFromItem(response.attributes());
+        }
+
+        return null;
     }
 
     @Override
-    public void deleteOrder(String id) {
-        deleteItem(getOrderKey(id));
+    public Order deleteOrder(String id) {
+        var response = deleteItem(getOrderKey(id));
+        return getOrderFromItem(response.attributes());
     }
 
     private Map<String, AttributeValue> getOrderKey(String id) {
@@ -101,7 +140,7 @@ public class OrderRepository extends AbstractRepository<Order> implements IOrder
         final var items = response.items();
         System.out.println("getOrdersFromResponse(): response.items()=" + items.toString());
         for (var item : items) {
-            final var order = getCustomerOrderFromAttributeValue(item, email);
+            final var order = getCustomerOrderFromItem(item, email);
             if (order != null) {
                 orders.add(order);
             }
@@ -110,7 +149,7 @@ public class OrderRepository extends AbstractRepository<Order> implements IOrder
         return orders;
     }
 
-    private Order getOrderDetailsFromResponse(QueryResponse response, String id) {
+    private Order getOrderDetailsFromResponse(QueryResponse response) {
         if (!response.hasItems()) {
             return null;
         }
@@ -120,14 +159,7 @@ public class OrderRepository extends AbstractRepository<Order> implements IOrder
         final var items = response.items();
         for (var item : items) {
             if (item.get(SK_ATTRIBUTE).s().startsWith(KEY_PREFIX)) {
-                order = Order.builder()
-                        .id(id)
-                        .status(Order.Status.valueOf(getSecondValueOrDefault(item, STATUS_ATTRIBUTE, null)))
-                        .createdAt(getDateOrDefault(item, DATE_CREATED_ATTRIBUTE, null))
-                        .deliveredAt(getDateOrDefault(item, DATE_DELIVERED_ATTRIBUTE, null))
-                        .customerEmail(getStringOrDefault(item, CUSTOMER_EMAIL_ATTRIBUTE, ""))
-                        .total(getBigDecimalOrDefault(item, TOTAL_ATTRIBUTE, null))
-                        .build();
+                order = getOrderFromItem(item);
             } else if (item.get(SK_ATTRIBUTE).s().startsWith(ProductRepository.KEY_PREFIX)) {
                 final var product = getOrderedProductFromAttributeValue(item);
                 if (product != null) {
@@ -144,9 +176,47 @@ public class OrderRepository extends AbstractRepository<Order> implements IOrder
         return order;
     }
 
-    private Order getCustomerOrderFromAttributeValue(Map<String, AttributeValue> value, String email) {
-        final var orderStatusAndId = value.get(CUSTOMERS_ORDER_STATUS_AND_ID_ATTRIBUTE).s();
-        var parts = orderStatusAndId.split("#");
+    private List<Order> getOrdersFromResponse(QueryResponse response) {
+        final var orders = new ArrayList<Order>();
+        if (!response.hasItems()) {
+            return orders;
+        }
+
+        final var items = response.items();
+        for (var item : items) {
+            if (item.get(PK_ATTRIBUTE).s().startsWith(KEY_PREFIX)) {
+                final var order = getOrderFromItem(item);
+                orders.add(order);
+            }
+        }
+
+        return orders;
+    }
+
+    private Order getOrderFromItem(Map<String, AttributeValue> item) {
+        if (isOrderEntity(item)) {
+            return Order.builder()
+                    .id(getSecondValueOrDefault(item, PK_ATTRIBUTE, null))
+                    .status(Order.Status.valueOf(getSecondValueOrDefault(item, STATUS_ATTRIBUTE, null)))
+                    .createdAt(getDateOrDefault(item, DATE_CREATED_ATTRIBUTE, null))
+                    .deliveredAt(getDateOrDefault(item, DATE_DELIVERED_ATTRIBUTE, null))
+                    .customerEmail(getStringOrDefault(item, CUSTOMER_EMAIL_ATTRIBUTE, ""))
+                    .total(getBigDecimalOrDefault(item, TOTAL_ATTRIBUTE, null))
+                    .build();
+        }
+
+        return Order.builder()
+                .id(getSecondValueOrDefault(item, PK_ATTRIBUTE, null))
+                .build();
+    }
+
+    private boolean isOrderEntity(Map<String, AttributeValue> item) {
+        return getStringOrDefault(item, SK_ATTRIBUTE, "").startsWith(KEY_PREFIX);
+    }
+
+    private Order getCustomerOrderFromItem(Map<String, AttributeValue> item, String email) {
+        final var orderStatusAndId = item.get(CUSTOMERS_ORDER_STATUS_AND_ID_ATTRIBUTE).s();
+        var parts = orderStatusAndId.split(SEP);
         if (parts.length < 3) {
             return null;
         }
@@ -154,9 +224,9 @@ public class OrderRepository extends AbstractRepository<Order> implements IOrder
         return Order.builder()
                 .status(Order.Status.valueOf(parts[1]))
                 .id(parts[2])
-                .createdAt(getDateOrDefault(value, CUSTOMERS_ORDER_DATE_CREATED_ATTRIBUTE, null))
-                .deliveredAt(getDateOrDefault(value, CUSTOMERS_ORDER_DATE_DELIVERED_ATTRIBUTE, null))
-                .total(getBigDecimalOrDefault(value, CUSTOMERS_ORDER_TOTAL_ATTRIBUTE, null))
+                .createdAt(getDateOrDefault(item, CUSTOMERS_ORDER_DATE_CREATED_ATTRIBUTE, null))
+                .deliveredAt(getDateOrDefault(item, CUSTOMERS_ORDER_DATE_DELIVERED_ATTRIBUTE, null))
+                .total(getBigDecimalOrDefault(item, CUSTOMERS_ORDER_TOTAL_ATTRIBUTE, null))
                 .customerEmail(email)
                 .build();
     }
@@ -210,7 +280,7 @@ public class OrderRepository extends AbstractRepository<Order> implements IOrder
 
     private Map<String, AttributeValue> getCustomerOrderItemFromOrder(Order order) {
         var item = new HashMap<String, AttributeValue>();
-        addPkSkIdAttributeIntoParent(item, order.getStatus().toString() + "#" + order.getId(),
+        addPkSkIdAttributeIntoParent(item, order.getStatus().toString() + SEP + order.getId(),
                 CustomerRepository.KEY_PREFIX + order.getCustomerEmail());
         addDateAttribute(item, CUSTOMERS_ORDER_DATE_CREATED_ATTRIBUTE, order.getCreatedAt());
         addDateAttribute(item, CUSTOMERS_ORDER_DATE_DELIVERED_ATTRIBUTE, order.getDeliveredAt());

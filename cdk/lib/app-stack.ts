@@ -13,11 +13,13 @@ export interface LambdaProps {
   timeout?: Duration;
   memorySize?: number;
   assetsPath?: string;
+  nativeJavaRuntime?: boolean;
 }
 
 export interface AppStackProps extends StackProps {
   deploymentEnv: string;
   javaLambdaPath: string;
+  nativeJavaRuntime: boolean;
 }
 
 export interface ApiResources {
@@ -26,7 +28,8 @@ export interface ApiResources {
 }
 
 const DEFAULT_LAMBDA_TIMEOUT = Duration.minutes(1);
-const LAMBDA_JAVA_MEMORY_LIMIT = 256;
+const LAMBDA_JVM_MEMORY = 384;
+const LAMBDA_NATIVE_MEMORY = 128;
 const QUARKUS_HANDLER = 'io.quarkus.amazon.lambda.runtime.QuarkusStreamHandler::handleRequest';
 
 export class AppStack extends Stack {
@@ -50,7 +53,7 @@ export class AppStack extends Stack {
         DYNAMODB_TABLE: this.dynamoDbTable.tableName,
       },
       policyStatements: [this.lambdaPolicies],
-      memorySize: LAMBDA_JAVA_MEMORY_LIMIT,
+      nativeJavaRuntime: this.props.nativeJavaRuntime,
     });
 
     this.dynamoDbTable.grantReadWriteData(lambda);
@@ -91,11 +94,7 @@ export class AppStack extends Stack {
   }
 
   private defineJavaQuarkusLambda(lambdaGroup: string, props: LambdaProps): lambda.Function {
-    const defaultJavaEnv = {
-      JAVA_TOOL_OPTIONS: `-Dquarkus.lambda.handler=${props.handlerName}`,
-      QUARKUS_LAMBDA_HANDLER: props.handlerName,
-      DISABLE_SIGNAL_HANDLERS: 'true',
-    };
+    const defaultJavaEnv = this.getQuarkusJvmEnv(props);
     const environment = Object.assign(defaultJavaEnv, this.getCommonEnvVars(props));
     const lambdaName = `${lambdaGroup}-${props.handlerName}`;
     const funcProps: lambda.FunctionProps = {
@@ -105,12 +104,29 @@ export class AppStack extends Stack {
       functionName: `${lambdaName}-${this.props.deploymentEnv}`,
       role: props.lambdaRole,
       code: new lambda.AssetCode(`${this.props.javaLambdaPath}/${lambdaGroup}/build/function.zip`),
-      runtime: lambda.Runtime.JAVA_11,
-      memorySize: props.memorySize,
+      runtime: props.nativeJavaRuntime ? lambda.Runtime.PROVIDED_AL2 : lambda.Runtime.JAVA_11,
+      memorySize: props.memorySize || this.getQuarkusMemorySize(props),
     };
 
     const func = new lambda.Function(this, lambdaName, funcProps);
     return this.configureLambda(func, props);
+  }
+
+  private getQuarkusMemorySize(props: LambdaProps): number {
+    return props.nativeJavaRuntime ? LAMBDA_NATIVE_MEMORY : LAMBDA_JVM_MEMORY;
+  }
+
+  private getQuarkusJvmEnv(props: LambdaProps): Record<string, string> {
+    if (props.nativeJavaRuntime) {
+      return {
+        QUARKUS_LAMBDA_HANDLER: props.handlerName,
+        DISABLE_SIGNAL_HANDLERS: 'true',
+      };
+    } else {
+      return {
+        JAVA_TOOL_OPTIONS: `-Dquarkus.lambda.handler=${props.handlerName}`,
+      };
+    }
   }
 
   private configureLambda(func: lambda.Function, props: LambdaProps) {

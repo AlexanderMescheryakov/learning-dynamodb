@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+./runner -Djava.library.path=./
+
