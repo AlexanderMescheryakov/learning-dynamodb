@@ -17,9 +17,10 @@ There are four Java API kinds in the AWS SDK for DynamoDB:
 * High-level API v1 (DynamoDbMapper)
 * Low-level API v2
 * High-level API v2 (Enhanced Client)
+
 Both low-level APIs correspond directly to DynamoDB HTTP API, but the v1 looks a bit more user friendly.
 The high-level APIs has similar functionality allowing to use annotations to map entity fields with attribute names.
 The main differences of the v2 APIs are the support of asynchronous calls and the optimization for AWS Lambda use cases having less initialization delays.
-Generally the Enhanced Client could be the default choice. The main reason to still use low level APIs would be heterogeneous batch or transactional requests using different entity types in one call.
+Generally the Enhanced Client could be the default choice. The main reason to still use low level APIs would be heterogeneous batch or transactional requests using different entity types in one call. But even in that case the high level table schema could ease the entity to attributes mapping.
 ![CRUD APIs](/images/crud.png)
 
