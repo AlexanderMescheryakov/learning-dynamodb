@@ -2,13 +2,13 @@ package com.trilogy.learning.market.repository.dynamodb;
 
 import java.math.BigDecimal;
 import java.util.*;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
+
+import lombok.extern.jbosslog.JBossLog;
 import org.joda.time.DateTime;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.*;
 
-import javax.inject.Inject;
-
+@JBossLog
 public abstract class AbstractRepository<T> {
     public static final String SEP = "#";
 

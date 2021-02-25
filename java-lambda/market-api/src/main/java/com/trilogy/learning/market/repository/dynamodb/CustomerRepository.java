@@ -38,7 +38,6 @@ public class CustomerRepository extends AbstractRepository<Customer> implements 
     @Override
     public Customer getByOrderId(String orderId) {
         final var response = queryGsi1Partition(OrderRepository.KEY_PREFIX + orderId);
-        log.info(response);
         final var customers = getCustomersFromItems(response.items());
         if (customers.size() > 0) {
             return customers.get(0);
@@ -56,9 +55,9 @@ public class CustomerRepository extends AbstractRepository<Customer> implements 
     @Override
     public Customer updateCustomer(UpdateCustomerRequest request) {
         final var updateValues = new HashMap<String, AttributeValue>();
-        String updateExpression = "";
+        String updateExpression = "SET ";
         if (request.getName() != null) {
-            updateExpression += "SET " + NAME_ATTRIBUTE + "=:name";
+            updateExpression += NAME_ATTRIBUTE + "=:name";
             updateValues.put(":name", AttributeValue.builder().s(KEY_PREFIX + request.getName()).build());
         }
 
@@ -67,7 +66,7 @@ public class CustomerRepository extends AbstractRepository<Customer> implements 
                 updateExpression += ", ";
             }
 
-            updateExpression += "SET " + STREET_ADDRESS_ATTRIBUTE + "=:st, "
+            updateExpression += STREET_ADDRESS_ATTRIBUTE + "=:st, "
                 + COUNTRY_CITY_ATTRIBUTE + "=:ct";
             final var countryCity = ADDR_PREFIX + request.getAddress().getCountry()
                     + SEP + request.getAddress().getCity();
@@ -98,6 +97,10 @@ public class CustomerRepository extends AbstractRepository<Customer> implements 
     }
 
     private Customer getCustomerFromItem(Map<String, AttributeValue> item) {
+        if (item.isEmpty()) {
+            return null;
+        }
+
         if (isCustomerEntity(item)) {
             return Customer.builder()
                     .email(getSecondValueOrDefault(item, PK_ATTRIBUTE, ""))
@@ -132,11 +135,10 @@ public class CustomerRepository extends AbstractRepository<Customer> implements 
         var combinedAddress = getStringOrDefault(item, COUNTRY_CITY_ATTRIBUTE, "");
         var parts = combinedAddress.split(SEP);
         var streetAddress = getStringOrDefault(item, STREET_ADDRESS_ATTRIBUTE, "");
-        return Address.builder()
-                .country(getSubValueOrDefault(parts, 1, ""))
-                .city(getSubValueOrDefault(parts, 2, ""))
-                .streetAddress(streetAddress)
-                .build();
+        return new Address(
+                getSubValueOrDefault(parts, 1, ""),
+                getSubValueOrDefault(parts, 2, ""),
+                streetAddress);
     }
 
     private void addAddressValue(Map<String, AttributeValue> item, Address address) {

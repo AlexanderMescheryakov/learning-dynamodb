@@ -93,7 +93,7 @@ public class OrderRepository extends AbstractRepository<Order> implements IOrder
             var value = KEY_PREFIX + order.getStatus().toString();
             if (order.getStatus() == Order.Status.DELIVERED) {
                 var date = DateTime.now();
-                value += date.toString("yyyy_MM");
+                value += SEP + date.toString("yyyy_MM");
 
                 updateValues.put(":dateDelivered", AttributeValue.builder()
                         .s(date.toString("yyyy-MM-dd'T'HH:mm:ss")).build());
