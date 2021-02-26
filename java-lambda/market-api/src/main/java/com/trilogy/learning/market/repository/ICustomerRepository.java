@@ -12,5 +12,7 @@ public interface ICustomerRepository {
 
     Customer updateCustomer(UpdateCustomerRequest customer);
 
+    Customer incrementOrderCount(String id, Integer increment);
+
     void deleteCustomer(String id);
 }

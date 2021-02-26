@@ -17,6 +17,9 @@ public abstract class AbstractRepository<T> {
     protected static final String GSI1 = "gsi1";
     protected static final String GSI1_PK_ATTRIBUTE= "gsi1pk";
     protected static final String GSI1_SK_ATTRIBUTE = "gsi1sk";
+    protected static final String GSI2 = "GSI2";
+    protected static final String GSI2_PK_ATTRIBUTE= "GSI2PK";
+    protected static final String GSI2_SK_ATTRIBUTE = "GSI2SK";
     protected static final String DATA_ATTRIBUTE = "Data";
 
     protected final DynamoDbClient dynamoDbClient;

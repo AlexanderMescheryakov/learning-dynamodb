@@ -19,6 +19,8 @@ const stack = new AppStack(app, `learning-dynamodb-${deploymentEnv}`, {
   javaLambdaPath: '../java-lambda/',
 });
 
+stack.defineStreamLambda('dynamodb-stream-handler');
+
 stack.defineRestApi('GET', '/order', 'get-order');
 stack.defineRestApi('GET', '/orders', 'get-orders');
 stack.defineRestApi('POST', '/order', 'add-order');
