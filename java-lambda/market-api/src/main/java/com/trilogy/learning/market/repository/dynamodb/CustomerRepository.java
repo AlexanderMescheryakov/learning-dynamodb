@@ -88,6 +88,15 @@ public class CustomerRepository extends AbstractRepository<Customer> implements 
         deleteItem(getItemKey(id));
     }
 
+    @Override
+    public Customer incrementOrderCount(String id, Integer increment) {
+        final var updateExpression = "ADD #cnt :inc";
+        final var updateValues = Map.of(":inc", AttributeValue.builder().n(increment.toString()).build());
+        final var updateNames = Map.of("#cnt", ORDER_COUNT_ATTRIBUTE);
+        final var response = updateItem(getCustomerKey(id), updateExpression, updateNames, updateValues);
+        return getCustomerFromItem(response.attributes());
+    }
+
     private Map<String, AttributeValue> getItemFromCustomer(Customer customer) {
         var item = new HashMap<String, AttributeValue>();
         addPkSkIdAttribute(item, customer.getEmail());

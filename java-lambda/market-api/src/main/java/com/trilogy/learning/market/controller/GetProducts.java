@@ -10,8 +10,9 @@ import java.util.Map;
 
 @Named("get-products")
 @AllArgsConstructor
-public class GetProductsByCategory extends AbstractApiGatewayLambda {
+public class GetProducts extends AbstractApiGatewayLambda {
     private static final String ID_PARAM = "category";
+    private static final String OUT_OF_STOCK_PARAM = "outOfStock";
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
     private IProductRepository productRepository;
@@ -21,6 +22,9 @@ public class GetProductsByCategory extends AbstractApiGatewayLambda {
         if (queryParams.containsKey(ID_PARAM)) {
             final var id = queryParams.get(ID_PARAM);
             final var items = productRepository.getByCategory(id);
+            return objectMapper.writeValueAsString(items);
+        } else if (queryParams.containsKey(OUT_OF_STOCK_PARAM)) {
+            final var items = productRepository.getIfOutOfStock();
             return objectMapper.writeValueAsString(items);
         }
 

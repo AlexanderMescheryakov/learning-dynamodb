@@ -3,6 +3,8 @@ package com.trilogy.learning.market.repository.dynamodb;
 import com.trilogy.learning.market.model.Order;
 import com.trilogy.learning.market.model.OrderedProduct;
 import com.trilogy.learning.market.repository.IOrderRepository;
+import com.trilogy.learning.market.repository.dynamodb.entity.EntityType;
+import com.trilogy.learning.market.repository.dynamodb.entity.Metadata;
 import com.trilogy.learning.market.requests.UpdateOrderRequest;
 import lombok.extern.jbosslog.JBossLog;
 import org.joda.time.DateTime;
@@ -193,7 +195,8 @@ public class OrderRepository extends AbstractRepository<Order> implements IOrder
         return orders;
     }
 
-    private Order getOrderFromItem(Map<String, AttributeValue> item) {
+    @Override
+    public Order getOrderFromItem(Map<String, AttributeValue> item) {
         if (isOrderEntity(item)) {
             return Order.builder()
                     .id(getSecondValueOrDefault(item, PK_ATTRIBUTE, null))
@@ -261,6 +264,7 @@ public class OrderRepository extends AbstractRepository<Order> implements IOrder
         addDateAttribute(item, DATE_DELIVERED_ATTRIBUTE, order.getDeliveredAt());
         addPrefixedStringAttribute(item, STATUS_ATTRIBUTE, order.getStatus().toString());
         addBigDecimalAttribute(item, TOTAL_ATTRIBUTE, order.getTotal());
+        addStringAttribute(item, Metadata.getEntityTypeAttributeName(), EntityType.Order.toString());
         return item;
     }
 
@@ -285,6 +289,7 @@ public class OrderRepository extends AbstractRepository<Order> implements IOrder
         addDateAttribute(item, CUSTOMERS_ORDER_DATE_CREATED_ATTRIBUTE, order.getCreatedAt());
         addDateAttribute(item, CUSTOMERS_ORDER_DATE_DELIVERED_ATTRIBUTE, order.getDeliveredAt());
         addBigDecimalAttribute(item, CUSTOMERS_ORDER_TOTAL_ATTRIBUTE, order.getTotal());
+        addStringAttribute(item, Metadata.getEntityTypeAttributeName(), EntityType.CustomerOrder.toString());
         return item;
     }
 

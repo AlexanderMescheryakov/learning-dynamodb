@@ -13,6 +13,8 @@ public interface IProductRepository {
 
     List<Product> getByCategory(String category);
 
+    List<Product> getIfOutOfStock();
+
     void addProduct(Product product);
 
     Product updateProduct(Product product);

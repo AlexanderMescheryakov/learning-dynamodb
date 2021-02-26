@@ -1,9 +1,10 @@
 import { App, Duration, RemovalPolicy, Stack, StackProps } from '@aws-cdk/core';
-import { AttributeType, ITable, ProjectionType, Table } from '@aws-cdk/aws-dynamodb';
+import { AttributeType, ITable, ProjectionType, StreamViewType, Table } from '@aws-cdk/aws-dynamodb';
 import { IRole, PolicyStatement } from '@aws-cdk/aws-iam';
-import { IFunction } from '@aws-cdk/aws-lambda';
+import { IEventSource, IFunction, StartingPosition } from '@aws-cdk/aws-lambda';
 import * as lambda from '@aws-cdk/aws-lambda';
 import * as apigateway from '@aws-cdk/aws-apigateway';
+import { DynamoEventSource } from '@aws-cdk/aws-lambda-event-sources';
 
 export interface LambdaProps {
   handlerName: string;
@@ -14,6 +15,7 @@ export interface LambdaProps {
   memorySize?: number;
   assetsPath?: string;
   nativeJavaRuntime?: boolean;
+  events?: IEventSource[];
 }
 
 export interface AppStackProps extends StackProps {
@@ -31,6 +33,7 @@ const DEFAULT_LAMBDA_TIMEOUT = Duration.minutes(1);
 const LAMBDA_JVM_MEMORY = 384;
 const LAMBDA_NATIVE_MEMORY = 128;
 const QUARKUS_HANDLER = 'io.quarkus.amazon.lambda.runtime.QuarkusStreamHandler::handleRequest';
+const DYNAMODB_STREAM_HANDLER_BATCH = 25;
 
 export class AppStack extends Stack {
   private readonly props: AppStackProps;
@@ -63,12 +66,35 @@ export class AppStack extends Stack {
     return { lambda, apiResource };
   }
 
+  public defineStreamLambda(handlerName: string): lambda.Function {
+    const lambda = this.defineJavaQuarkusLambda('market-api', {
+      handlerName,
+      environment: {
+        DYNAMODB_TABLE: this.dynamoDbTable.tableName,
+      },
+      policyStatements: [this.lambdaPolicies],
+      nativeJavaRuntime: this.props.nativeJavaRuntime,
+      events: [
+        new DynamoEventSource(this.dynamoDbTable, {
+          startingPosition: StartingPosition.LATEST,
+          batchSize: DYNAMODB_STREAM_HANDLER_BATCH,
+          retryAttempts: 1,
+        }),
+      ],
+    });
+
+    this.dynamoDbTable.grantReadWriteData(lambda);
+    this.dynamoDbTable.grantStreamRead(lambda);
+    return lambda;
+  }
+
   private setupDynamoDbTable(): ITable {
     const table = new Table(this, 'LearningDynamoDb', {
       tableName: `LearningDynamoDb-${this.props.deploymentEnv}`,
       partitionKey: { name: 'pk', type: AttributeType.STRING },
       sortKey: { name: 'sk', type: AttributeType.STRING },
       removalPolicy: RemovalPolicy.DESTROY,
+      stream: StreamViewType.NEW_AND_OLD_IMAGES,
     });
 
     table.addGlobalSecondaryIndex({
@@ -79,6 +105,14 @@ export class AppStack extends Stack {
       nonKeyAttributes: ['pk', 'Data'],
     });
 
+    table.addGlobalSecondaryIndex({
+      indexName: 'GSI2',
+      partitionKey: { name: 'GSI2PK', type: AttributeType.STRING },
+      sortKey: { name: 'GSI2SK', type: AttributeType.STRING },
+      projectionType: ProjectionType.INCLUDE,
+      nonKeyAttributes: ['pk'],
+    });
+
     return table;
   }
 
@@ -86,8 +120,8 @@ export class AppStack extends Stack {
     const api = new apigateway.RestApi(this, 'learning-dynamodb', {
       defaultCorsPreflightOptions: {
         allowOrigins: apigateway.Cors.ALL_ORIGINS,
-        allowMethods: apigateway.Cors.ALL_METHODS
-      }
+        allowMethods: apigateway.Cors.ALL_METHODS,
+      },
     });
     api.root.addMethod('ANY');
     return api;
@@ -106,6 +140,7 @@ export class AppStack extends Stack {
       code: new lambda.AssetCode(`${this.props.javaLambdaPath}/${lambdaGroup}/build/function.zip`),
       runtime: props.nativeJavaRuntime ? lambda.Runtime.PROVIDED_AL2 : lambda.Runtime.JAVA_11,
       memorySize: props.memorySize || this.getQuarkusMemorySize(props),
+      events: props.events,
     };
 
     const func = new lambda.Function(this, lambdaName, funcProps);

@@ -2,8 +2,11 @@ package com.trilogy.learning.market.repository.dynamodb;
 
 import com.trilogy.learning.market.model.Product;
 import com.trilogy.learning.market.repository.IProductRepository;
+import com.trilogy.learning.market.repository.dynamodb.entity.Metadata;
 import lombok.extern.jbosslog.JBossLog;
 import software.amazon.awssdk.enhanced.dynamodb.*;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.StaticTableSchema;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.UpdateBehavior;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import javax.inject.Inject;
@@ -19,6 +22,7 @@ import static software.amazon.awssdk.enhanced.dynamodb.mapper.StaticAttributeTag
 public class ProductRepository extends AbstractRepository<Product> implements IProductRepository {
     static final String KEY_PREFIX = "PROD#";
     static final String CATEGORY_PREFIX = "CAT#";
+    static final String OUT_OF_STOCK_MARKER = "OUT_OF_STOCK";
 
     private static final String CATEGORY_ATTRIBUTE = GSI1_PK_ATTRIBUTE;
     private static final String NAME_ATTRIBUTE = GSI1_SK_ATTRIBUTE;
@@ -26,9 +30,10 @@ public class ProductRepository extends AbstractRepository<Product> implements IP
 
     private static final PrefixAttributeConverter idConverter = new PrefixAttributeConverter(KEY_PREFIX);
     private static final PrefixAttributeConverter categoryConverter = new PrefixAttributeConverter(CATEGORY_PREFIX);
-    private static final TableSchema<Product> TABLE_SCHEMA =
-            TableSchema.builder(Product.class)
+    private static final StaticTableSchema<Product> TABLE_SCHEMA =
+            StaticTableSchema.builder(Product.class)
                     .newItemSupplier(Product::new)
+                    .extend(Metadata.getSchema())
                     .addAttribute(String.class, a -> a.name(PK_ATTRIBUTE)
                             .getter(Product::getId)
                             .setter(Product::setId)
@@ -43,18 +48,28 @@ public class ProductRepository extends AbstractRepository<Product> implements IP
                             .getter(Product::getCategory)
                             .setter(Product::setCategory)
                             .attributeConverter(categoryConverter)
-                            .tags(secondaryPartitionKey("gsi1")))
+                            .tags(secondaryPartitionKey(GSI1), updateBehavior(UpdateBehavior.WRITE_IF_NOT_EXISTS)))
                     .addAttribute(String.class, a -> a.name(GSI1_SK_ATTRIBUTE)
                             .getter(Product::getName)
                             .setter(Product::setName)
-                            .tags(secondarySortKey("gsi1")))
+                            .tags(secondarySortKey(GSI1), updateBehavior(UpdateBehavior.WRITE_IF_NOT_EXISTS)))
                     .addAttribute(BigDecimal.class, a -> a.name(DATA_ATTRIBUTE)
                             .getter(Product::getPrice)
-                            .setter(Product::setPrice))
+                            .setter(Product::setPrice)
+                            .tags(updateBehavior(UpdateBehavior.WRITE_IF_NOT_EXISTS)))
+                    .addAttribute(String.class, a -> a.name(GSI2_PK_ATTRIBUTE)
+                            .getter(Product::getOutOfStockMarker)
+                            .setter(Product::setOutOfStockMarker)
+                            .tags(secondaryPartitionKey(GSI2)))
+                    .addAttribute(String.class, a -> a.name(GSI2_SK_ATTRIBUTE)
+                            .getter(Product::getOutOfStockName)
+                            .setter(Product::setOutOfStockName)
+                            .tags(secondarySortKey(GSI2)))
                     .build();
 
     private final DynamoDbTable<Product> productTable;
     private final DynamoDbIndex<Product> productsByCategoryIndex;
+    private final DynamoDbIndex<Product> outOfStockIndex;
 
     @Inject
     public ProductRepository(DynamoDbClient dynamoDbClient) {
@@ -64,6 +79,7 @@ public class ProductRepository extends AbstractRepository<Product> implements IP
                 .build();
         productTable = enhancedClient.table(getTableName(), TABLE_SCHEMA);
         productsByCategoryIndex = productTable.index(GSI1);
+        outOfStockIndex = productTable.index(GSI2);
     }
 
     @Override
@@ -77,6 +93,15 @@ public class ProductRepository extends AbstractRepository<Product> implements IP
         final var pk = getCategoryKey(category);
         final var products = new ArrayList<Product>();
         productsByCategoryIndex.query(keyEqualTo(k -> k.partitionValue(pk))).stream()
+                .forEach(p -> products.addAll(p.items()));
+        return products;
+    }
+
+    @Override
+    public List<Product> getIfOutOfStock() {
+        final var pk = getOutOfStockKey();
+        final var products = new ArrayList<Product>();
+        outOfStockIndex.query(keyEqualTo(k -> k.partitionValue(pk))).stream()
                 .forEach(p -> products.addAll(p.items()));
         return products;
     }
@@ -132,12 +157,12 @@ public class ProductRepository extends AbstractRepository<Product> implements IP
         return CATEGORY_PREFIX + category;
     }
 
+    private String getOutOfStockKey() {
+        return OUT_OF_STOCK_MARKER;
+    }
+
     private Product getProductFromItem(Map<String, AttributeValue> item) {
-        return new Product(
-                getSecondValueOrDefault(item, PK_ATTRIBUTE, null),
-                getStringOrDefault(item, NAME_ATTRIBUTE, null),
-                getBigDecimalOrDefault(item, PRICE_ATTRIBUTE, null),
-                getSecondValueOrDefault(item, CATEGORY_ATTRIBUTE, ""));
+        return TABLE_SCHEMA.mapToItem(item);
     }
 
     @Override
