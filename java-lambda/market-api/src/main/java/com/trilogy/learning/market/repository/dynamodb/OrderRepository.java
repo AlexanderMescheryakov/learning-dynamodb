@@ -9,12 +9,14 @@ import com.trilogy.learning.market.requests.UpdateOrderRequest;
 import lombok.extern.jbosslog.JBossLog;
 import org.joda.time.DateTime;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
-import software.amazon.awssdk.services.dynamodb.model.GetItemResponse;
-import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
+import software.amazon.awssdk.services.dynamodb.model.*;
+
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.rmi.Remote;
 import java.util.*;
+
+import static java.lang.String.format;
 
 @JBossLog
 @Singleton
@@ -28,6 +30,7 @@ public class OrderRepository extends AbstractRepository<Order> implements IOrder
     private static final String TOTAL_ATTRIBUTE = DATA_ATTRIBUTE;
     // Orders in the Customer -> Order relation
     private static final String CUSTOMERS_ORDER_STATUS_AND_ID_ATTRIBUTE = SK_ATTRIBUTE;
+    private static final String CUSTOMERS_ORDER_ID_ATTRIBUTE = GSI1_PK_ATTRIBUTE;
     private static final String CUSTOMERS_ORDER_DATE_CREATED_ATTRIBUTE = GSI1_SK_ATTRIBUTE;
     private static final String CUSTOMERS_ORDER_DATE_DELIVERED_ATTRIBUTE = DATE_DELIVERED_ATTRIBUTE;
     private static final String CUSTOMERS_ORDER_TOTAL_ATTRIBUTE = DATA_ATTRIBUTE;
@@ -47,7 +50,7 @@ public class OrderRepository extends AbstractRepository<Order> implements IOrder
     @Override
     public Order getById(String id) {
         final var response = getItem(id);
-        return getOrderFromResponse(response, id);
+        return getOrderFromItem(response.item());
     }
 
     @Override
@@ -92,11 +95,10 @@ public class OrderRepository extends AbstractRepository<Order> implements IOrder
         String updateExpression = "";
         if (order.getStatus() != null) {
             updateExpression += "SET " + STATUS_ATTRIBUTE + "=:status";
-            var value = KEY_PREFIX + order.getStatus().toString();
+            final var now = new Date();
+            final var value = getStatusDateValue(order.getStatus(), now);
             if (order.getStatus() == Order.Status.DELIVERED) {
-                var date = DateTime.now();
-                value += SEP + date.toString("yyyy_MM");
-
+                var date = new DateTime(now);
                 updateValues.put(":dateDelivered", AttributeValue.builder()
                         .s(date.toString("yyyy-MM-dd'T'HH:mm:ss")).build());
                 updateExpression += ", " + DATE_DELIVERED_ATTRIBUTE + "=:dateDelivered";
@@ -113,6 +115,16 @@ public class OrderRepository extends AbstractRepository<Order> implements IOrder
         return null;
     }
 
+    private String getStatusDateValue(Order.Status status, Date date) {
+        var value = KEY_PREFIX + status.toString();
+        if (status == Order.Status.DELIVERED) {
+            var dateFormatter = new DateTime(date);
+            value += SEP + dateFormatter.toString("yyyy_MM");
+        }
+
+        return value;
+    }
+
     @Override
     public Order deleteOrder(String id) {
         var response = deleteItem(getOrderKey(id));
@@ -121,16 +133,6 @@ public class OrderRepository extends AbstractRepository<Order> implements IOrder
 
     private Map<String, AttributeValue> getOrderKey(String id) {
         return getKeyAttributes(KEY_PREFIX + id, KEY_PREFIX + id);
-    }
-
-    private Order getOrderFromResponse(GetItemResponse response, String id) {
-        return Order.builder()
-                .id(id)
-                .createdAt(getDateOrDefault(response, DATE_CREATED_ATTRIBUTE, null))
-                .deliveredAt(getDateOrDefault(response, DATE_DELIVERED_ATTRIBUTE, null))
-                .customerEmail(response.getValueForField(CUSTOMER_EMAIL_ATTRIBUTE, String.class).orElse(""))
-                .total(getBigDecimalOrDefault(response, TOTAL_ATTRIBUTE, null))
-                .build();
     }
 
     private List<Order> getCustomerOrdersFromResponse(QueryResponse response, String email) {
@@ -197,6 +199,7 @@ public class OrderRepository extends AbstractRepository<Order> implements IOrder
 
     @Override
     public Order getOrderFromItem(Map<String, AttributeValue> item) {
+        log.info(item);
         if (isOrderEntity(item)) {
             return Order.builder()
                     .id(getSecondValueOrDefault(item, PK_ATTRIBUTE, null))
@@ -211,6 +214,52 @@ public class OrderRepository extends AbstractRepository<Order> implements IOrder
         return Order.builder()
                 .id(getSecondValueOrDefault(item, PK_ATTRIBUTE, null))
                 .build();
+    }
+
+    @Override
+    public List<TransactWriteItem> getChangeStatusTransactRequest(String customerId, String orderId,
+                                                                  Order oldOrder, Order.Status newStatus) {
+        final var requests = new ArrayList<TransactWriteItem>();
+        final var updateRequest = Update.builder()
+                .tableName(getTableName())
+                .key(getOrderKey(orderId))
+                .conditionExpression(format("%s = :old", STATUS_ATTRIBUTE))
+                .updateExpression(format("SET %s = :new", STATUS_ATTRIBUTE))
+                .expressionAttributeValues(Map.of(
+                        ":new" , getStatusAttributeValue(newStatus),
+                        ":old" , getStatusAttributeValue(Order.Status.OPEN)))
+                .build();
+        requests.add(TransactWriteItem.builder().update(updateRequest).build());
+        final var deleteRequest = Delete.builder()
+                .tableName(getTableName())
+                .key(getCustomerOrderKey(customerId, orderId, oldOrder.getStatus()))
+                .conditionExpression(format("attribute_exists(%s)", PK_ATTRIBUTE))
+                .build();
+        requests.add(TransactWriteItem.builder().delete(deleteRequest).build());
+        final var newCustomerOrder = oldOrder.toBuilder().status(newStatus).build();
+        final var newCustomerOrderItem = getCustomerOrderItemFromOrder(newCustomerOrder);
+        final var putRequest = Put.builder()
+                .tableName(getTableName())
+                .conditionExpression(format("attribute_not_exists(%s)", PK_ATTRIBUTE))
+                .item(newCustomerOrderItem)
+                .build();
+        requests.add(TransactWriteItem.builder().put(putRequest).build());
+        return requests;
+    }
+
+    private Map<String, AttributeValue> getCustomerOrderKey(String customerId, String orderId, Order.Status status) {
+        final var key = new HashMap<String, AttributeValue>();
+        addPkSkIdAttributeIntoParent(key, getCustomerOrderStatusValue(status, orderId),
+                CustomerRepository.getPartitonKey(customerId));
+        return key;
+    }
+
+    private AttributeValue getStatusAttributeValue(Order.Status status) {
+        return AttributeValue.builder().s(getStatusDateValue(status, new Date())).build();
+    }
+
+    private String getCustomerOrderStatusValue(Order.Status status, String orderId) {
+        return format("%s#%s", status.toString(), orderId);
     }
 
     private boolean isOrderEntity(Map<String, AttributeValue> item) {
@@ -262,7 +311,7 @@ public class OrderRepository extends AbstractRepository<Order> implements IOrder
         addStringAttribute(item, CUSTOMER_EMAIL_ATTRIBUTE, order.getCustomerEmail());
         addDateAttribute(item, DATE_CREATED_ATTRIBUTE, order.getCreatedAt());
         addDateAttribute(item, DATE_DELIVERED_ATTRIBUTE, order.getDeliveredAt());
-        addPrefixedStringAttribute(item, STATUS_ATTRIBUTE, order.getStatus().toString());
+        addStringAttribute(item, STATUS_ATTRIBUTE, getStatusDateValue(order.getStatus(), new Date()));
         addBigDecimalAttribute(item, TOTAL_ATTRIBUTE, order.getTotal());
         addStringAttribute(item, Metadata.getEntityTypeAttributeName(), EntityType.Order.toString());
         return item;
@@ -285,10 +334,11 @@ public class OrderRepository extends AbstractRepository<Order> implements IOrder
     private Map<String, AttributeValue> getCustomerOrderItemFromOrder(Order order) {
         var item = new HashMap<String, AttributeValue>();
         addPkSkIdAttributeIntoParent(item, order.getStatus().toString() + SEP + order.getId(),
-                CustomerRepository.KEY_PREFIX + order.getCustomerEmail());
+                CustomerRepository.getPartitonKey(order.getCustomerEmail()));
         addDateAttribute(item, CUSTOMERS_ORDER_DATE_CREATED_ATTRIBUTE, order.getCreatedAt());
         addDateAttribute(item, CUSTOMERS_ORDER_DATE_DELIVERED_ATTRIBUTE, order.getDeliveredAt());
         addBigDecimalAttribute(item, CUSTOMERS_ORDER_TOTAL_ATTRIBUTE, order.getTotal());
+        addPrefixedStringAttribute(item, CUSTOMERS_ORDER_ID_ATTRIBUTE, order.getId());
         addStringAttribute(item, Metadata.getEntityTypeAttributeName(), EntityType.CustomerOrder.toString());
         return item;
     }

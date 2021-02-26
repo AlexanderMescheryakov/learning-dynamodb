@@ -97,6 +97,10 @@ public class CustomerRepository extends AbstractRepository<Customer> implements 
         return getCustomerFromItem(response.attributes());
     }
 
+    static String getPartitonKey(String id) {
+        return KEY_PREFIX + id;
+    }
+
     private Map<String, AttributeValue> getItemFromCustomer(Customer customer) {
         var item = new HashMap<String, AttributeValue>();
         addPkSkIdAttribute(item, customer.getEmail());

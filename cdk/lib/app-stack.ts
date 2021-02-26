@@ -39,6 +39,7 @@ export class AppStack extends Stack {
   private readonly props: AppStackProps;
   private readonly lambdaPolicies: PolicyStatement;
   private readonly dynamoDbTable: ITable;
+  private readonly dynamoDbPaymentsTable: ITable;
   private readonly restApi: apigateway.RestApi;
 
   public constructor(app: App, id: string, props: AppStackProps) {
@@ -46,6 +47,7 @@ export class AppStack extends Stack {
     this.props = props;
     this.lambdaPolicies = this.buildPolicyStatement(['logs:*'], ['arn:aws:logs:*:*:*']);
     this.dynamoDbTable = this.setupDynamoDbTable();
+    this.dynamoDbPaymentsTable = this.setupDynamoDbPaymentsTable();
     this.restApi = this.setupApiGateway();
   }
 
@@ -54,12 +56,14 @@ export class AppStack extends Stack {
       handlerName,
       environment: {
         DYNAMODB_TABLE: this.dynamoDbTable.tableName,
+        DYNAMODB_TABLE_PAYMENTS: this.dynamoDbPaymentsTable.tableName,
       },
       policyStatements: [this.lambdaPolicies],
       nativeJavaRuntime: this.props.nativeJavaRuntime,
     });
 
     this.dynamoDbTable.grantReadWriteData(lambda);
+    this.dynamoDbPaymentsTable.grantReadWriteData(lambda);
     const apiResource = this.restApi.root.resourceForPath(url);
     const lambdaIntegration = new apigateway.LambdaIntegration(lambda);
     apiResource.addMethod(method, lambdaIntegration);
@@ -111,6 +115,17 @@ export class AppStack extends Stack {
       sortKey: { name: 'GSI2SK', type: AttributeType.STRING },
       projectionType: ProjectionType.INCLUDE,
       nonKeyAttributes: ['pk'],
+    });
+
+    return table;
+  }
+
+  private setupDynamoDbPaymentsTable(): ITable {
+    const table = new Table(this, 'LearningDynamoDb-Payments', {
+      tableName: `LearningDynamoDb-Payments-${this.props.deploymentEnv}`,
+      partitionKey: { name: 'PK', type: AttributeType.STRING },
+      sortKey: { name: 'SK', type: AttributeType.STRING },
+      removalPolicy: RemovalPolicy.DESTROY,
     });
 
     return table;

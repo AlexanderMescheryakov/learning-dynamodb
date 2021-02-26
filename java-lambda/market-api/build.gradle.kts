@@ -22,6 +22,7 @@ dependencies {
     implementation("com.amazonaws:aws-lambda-java-events:3.7.0")
     implementation("com.amazonaws:aws-lambda-java-events-sdk-transformer:3.0.2")
     implementation("com.amazonaws:aws-lambda-java-serialization:1.0.0")
+    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.11.4")
     implementation("commons-logging:commons-logging:1.2")
     implementation("joda-time:joda-time:2.10.10")
     implementation("com.amirkhawaja:ksuid:1.0.0")
