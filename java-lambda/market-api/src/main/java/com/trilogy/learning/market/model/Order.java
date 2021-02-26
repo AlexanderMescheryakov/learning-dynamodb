@@ -11,13 +11,14 @@ import java.util.Date;
 import java.util.List;
 
 @Data
-@Builder
+@Builder(toBuilder=true)
 @RegisterForReflection
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class Order {
     public enum Status {
         OPEN,
         DELIVERED,
+        PAID
     }
 
     String id;

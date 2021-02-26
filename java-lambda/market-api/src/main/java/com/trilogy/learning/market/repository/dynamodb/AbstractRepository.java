@@ -3,13 +3,14 @@ package com.trilogy.learning.market.repository.dynamodb;
 import java.math.BigDecimal;
 import java.util.*;
 
+import com.trilogy.learning.market.repository.ITableRepository;
 import lombok.extern.jbosslog.JBossLog;
 import org.joda.time.DateTime;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.*;
 
 @JBossLog
-public abstract class AbstractRepository<T> {
+public abstract class AbstractRepository<T> implements ITableRepository {
     public static final String SEP = "#";
 
     protected static final String PK_ATTRIBUTE= "pk";
@@ -28,6 +29,7 @@ public abstract class AbstractRepository<T> {
         dynamoDbClient = dynamoClient;
     }
 
+    @Override
     public String getTableName() {
         return System.getenv("DYNAMODB_TABLE");
     }
