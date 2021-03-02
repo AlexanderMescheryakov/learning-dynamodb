@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 
+// Workaround for a Quarkus bug with DynamodbEvent deserialization for AWS Lambda handler
 public class DateModule extends SimpleModule {
     public DateModule() {
         super(PackageVersion.VERSION);
