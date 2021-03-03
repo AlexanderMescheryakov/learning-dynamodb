@@ -38,6 +38,6 @@ stack.defineRestApi('PUT', '/product', 'update-product');
 stack.defineRestApi('DELETE', '/product', 'delete-product');
 
 stack.defineRestApi('POST', '/payment', 'add-payment');
-stack.defineRestApi('GET', '/payments', 'get-payments');
+stack.defineRestApi('GET', '/payments', 'get-payments', true);
 
 app.synth();

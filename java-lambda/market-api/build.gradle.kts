@@ -18,6 +18,7 @@ dependencies {
     implementation(platform("software.amazon.awssdk:bom:2.15.53"))
     implementation("software.amazon.awssdk:dynamodb")
     implementation("software.amazon.awssdk:dynamodb-enhanced")
+    implementation("software.amazon.awssdk:sts")
     implementation("software.amazon.awssdk:url-connection-client")
     implementation("com.amazonaws:aws-lambda-java-events:3.7.0")
     implementation("com.amazonaws:aws-lambda-java-events-sdk-transformer:3.0.2")

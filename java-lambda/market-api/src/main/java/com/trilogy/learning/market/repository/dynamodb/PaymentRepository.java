@@ -2,11 +2,11 @@ package com.trilogy.learning.market.repository.dynamodb;
 
 import com.trilogy.learning.market.model.Payment;
 import com.trilogy.learning.market.repository.IPaymentRepository;
+import com.trilogy.learning.market.service.RestrictedDynamoDbService;
 import lombok.extern.jbosslog.JBossLog;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.StaticTableSchema;
-import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.Put;
 import software.amazon.awssdk.services.dynamodb.model.TransactWriteItem;
 
@@ -15,7 +15,6 @@ import javax.inject.Singleton;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 import static software.amazon.awssdk.enhanced.dynamodb.mapper.StaticAttributeTags.primaryPartitionKey;
@@ -49,14 +48,24 @@ public class PaymentRepository implements IPaymentRepository {
                             .setter(Payment::setAmount))
                     .build();
 
-    private final DynamoDbTable<Payment> table;
+    private DynamoDbTable<Payment> table;
+    private RestrictedDynamoDbService connectionService;
 
     @Inject
-    public PaymentRepository(DynamoDbClient dynamoDbClient) {
-        final var enhancedClient = DynamoDbEnhancedClient.builder()
-                .dynamoDbClient(dynamoDbClient)
-                .build();
-        table = enhancedClient.table(getTableName(), TABLE_SCHEMA);
+    public PaymentRepository(RestrictedDynamoDbService dbConnectionService) {
+        connectionService = dbConnectionService;
+    }
+
+    private DynamoDbTable<Payment> getTable() {
+        if (table == null) {
+            final var dynamoDbClient = connectionService.getClient();
+            final var enhancedClient = DynamoDbEnhancedClient.builder()
+                    .dynamoDbClient(dynamoDbClient)
+                    .build();
+            table = enhancedClient.table(getTableName(), TABLE_SCHEMA);
+        }
+
+        return table;
     }
 
     public String getTableName() {
@@ -78,7 +87,7 @@ public class PaymentRepository implements IPaymentRepository {
     public List<Payment> getByCustomerId(String customerId) {
         final var pk = getPartitionKey(customerId);
         final var payments = new ArrayList<Payment>();
-        table.query(keyEqualTo(k -> k.partitionValue(pk))).stream()
+        getTable().query(keyEqualTo(k -> k.partitionValue(pk))).stream()
                 .forEach(p -> payments.addAll(p.items()));
         log.info(payments);
         return payments;
