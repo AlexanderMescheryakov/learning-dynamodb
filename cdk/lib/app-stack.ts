@@ -1,10 +1,11 @@
 import { App, Duration, RemovalPolicy, Stack, StackProps } from '@aws-cdk/core';
-import { AttributeType, ITable, ProjectionType, StreamViewType, Table } from '@aws-cdk/aws-dynamodb';
 import { IRole, PolicyStatement } from '@aws-cdk/aws-iam';
 import { IEventSource, IFunction, StartingPosition } from '@aws-cdk/aws-lambda';
+import { DynamoEventSource } from '@aws-cdk/aws-lambda-event-sources';
 import * as lambda from '@aws-cdk/aws-lambda';
 import * as apigateway from '@aws-cdk/aws-apigateway';
-import { DynamoEventSource } from '@aws-cdk/aws-lambda-event-sources';
+import { DynamoDbTable } from './dynamo';
+import { BillingMode, StreamViewType } from '@aws-cdk/aws-dynamodb';
 
 export interface LambdaProps {
   handlerName: string;
@@ -38,8 +39,8 @@ const DYNAMODB_STREAM_HANDLER_BATCH = 25;
 export class AppStack extends Stack {
   private readonly props: AppStackProps;
   private readonly lambdaPolicies: PolicyStatement;
-  private readonly dynamoDbTable: ITable;
-  private readonly dynamoDbPaymentsTable: ITable;
+  private readonly dynamoDbTable: DynamoDbTable;
+  private readonly dynamoDbPaymentsTable: DynamoDbTable;
   private readonly restApi: apigateway.RestApi;
 
   public constructor(app: App, id: string, props: AppStackProps) {
@@ -55,15 +56,15 @@ export class AppStack extends Stack {
     const lambda = this.defineJavaQuarkusLambda('market-api', {
       handlerName,
       environment: {
-        DYNAMODB_TABLE: this.dynamoDbTable.tableName,
-        DYNAMODB_TABLE_PAYMENTS: this.dynamoDbPaymentsTable.tableName,
+        DYNAMODB_TABLE: this.dynamoDbTable.getTable().tableName,
+        DYNAMODB_TABLE_PAYMENTS: this.dynamoDbPaymentsTable.getTable().tableName,
       },
       policyStatements: [this.lambdaPolicies],
       nativeJavaRuntime: this.props.nativeJavaRuntime,
     });
 
-    this.dynamoDbTable.grantReadWriteData(lambda);
-    this.dynamoDbPaymentsTable.grantReadWriteData(lambda);
+    this.dynamoDbTable.getTable().grantReadWriteData(lambda);
+    this.dynamoDbPaymentsTable.getTable().grantReadWriteData(lambda);
     const apiResource = this.restApi.root.resourceForPath(url);
     const lambdaIntegration = new apigateway.LambdaIntegration(lambda);
     apiResource.addMethod(method, lambdaIntegration);
@@ -74,12 +75,12 @@ export class AppStack extends Stack {
     const lambda = this.defineJavaQuarkusLambda('market-api', {
       handlerName,
       environment: {
-        DYNAMODB_TABLE: this.dynamoDbTable.tableName,
+        DYNAMODB_TABLE: this.dynamoDbTable.getTable().tableName,
       },
       policyStatements: [this.lambdaPolicies],
       nativeJavaRuntime: this.props.nativeJavaRuntime,
       events: [
-        new DynamoEventSource(this.dynamoDbTable, {
+        new DynamoEventSource(this.dynamoDbTable.getTable(), {
           startingPosition: StartingPosition.LATEST,
           batchSize: DYNAMODB_STREAM_HANDLER_BATCH,
           retryAttempts: 1,
@@ -87,48 +88,31 @@ export class AppStack extends Stack {
       ],
     });
 
-    this.dynamoDbTable.grantReadWriteData(lambda);
-    this.dynamoDbTable.grantStreamRead(lambda);
+    this.dynamoDbTable.getTable().grantReadWriteData(lambda);
+    this.dynamoDbTable.getTable().grantStreamRead(lambda);
     return lambda;
   }
 
-  private setupDynamoDbTable(): ITable {
-    const table = new Table(this, 'LearningDynamoDb', {
-      tableName: `LearningDynamoDb-${this.props.deploymentEnv}`,
-      partitionKey: { name: 'pk', type: AttributeType.STRING },
-      sortKey: { name: 'sk', type: AttributeType.STRING },
+  private setupDynamoDbTable(): DynamoDbTable {
+    const tableName = 'LearningDynamoDb';
+    return new DynamoDbTable(this, tableName, {
+      tableName,
+      globalIndexes: [{ projected: ['PK', 'Data'] }, { projected: ['PK'] }],
+      deploymentEnv: this.props.deploymentEnv,
       removalPolicy: RemovalPolicy.DESTROY,
-      stream: StreamViewType.NEW_AND_OLD_IMAGES,
+      streamType: StreamViewType.NEW_AND_OLD_IMAGES,
     });
-
-    table.addGlobalSecondaryIndex({
-      indexName: 'gsi1',
-      partitionKey: { name: 'gsi1pk', type: AttributeType.STRING },
-      sortKey: { name: 'gsi1sk', type: AttributeType.STRING },
-      projectionType: ProjectionType.INCLUDE,
-      nonKeyAttributes: ['pk', 'Data'],
-    });
-
-    table.addGlobalSecondaryIndex({
-      indexName: 'GSI2',
-      partitionKey: { name: 'GSI2PK', type: AttributeType.STRING },
-      sortKey: { name: 'GSI2SK', type: AttributeType.STRING },
-      projectionType: ProjectionType.INCLUDE,
-      nonKeyAttributes: ['pk'],
-    });
-
-    return table;
   }
 
-  private setupDynamoDbPaymentsTable(): ITable {
-    const table = new Table(this, 'LearningDynamoDb-Payments', {
-      tableName: `LearningDynamoDb-Payments-${this.props.deploymentEnv}`,
-      partitionKey: { name: 'PK', type: AttributeType.STRING },
-      sortKey: { name: 'SK', type: AttributeType.STRING },
+  private setupDynamoDbPaymentsTable(): DynamoDbTable {
+    const tableName = 'LearningDynamoDb-Payments';
+    return new DynamoDbTable(this, tableName, {
+      tableName,
+      deploymentEnv: this.props.deploymentEnv,
       removalPolicy: RemovalPolicy.DESTROY,
+      streamType: StreamViewType.NEW_AND_OLD_IMAGES,
+      billingMode: BillingMode.PAY_PER_REQUEST,
     });
-
-    return table;
   }
 
   private setupApiGateway(): apigateway.RestApi {

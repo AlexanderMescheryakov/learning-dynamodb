@@ -61,7 +61,7 @@ tasks.register<NpmTask>("deploy") {
     setArgs(listOf("run", "cdk", "--", "deploy", "--require-approval=never") + cdkContextOptions)
 }
 
-tasks.register<NpmTask>("seed-data") {
+tasks.register<NpmTask>("seed") {
     description = "Import test data"
     dependsOn(build)
     setArgs(listOf("run", "dynamodb-import", "--", "--jsonFile", "$projectDir/seed-data.json",

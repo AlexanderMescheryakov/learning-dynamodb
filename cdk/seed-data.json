@@ -1,82 +1,82 @@
 [
   {
-    "sk": "PROD#Prod2",
-    "gsi1sk": "Product 2",
-    "pk": "PROD#Prod2",
+    "SK": "PROD#Prod2",
+    "GSI1SK": "Product 2",
+    "PK": "PROD#Prod2",
     "Data": 9.25,
-    "gsi1pk": "CAT#Category2"
+    "GSI1PK": "CAT#Category2"
   },
   {
-    "gsi1sk": "2020-01-14T09:12:51",
+    "GSI1SK": "2020-01-14T09:12:51",
     "DateDelivered": "2020-01-16T10:05:14",
     "Data": 50,
-    "sk": "ORDER#OrderId2",
+    "SK": "ORDER#OrderId2",
     "CustomerEmail": "c1@mail.com",
-    "pk": "ORDER#OrderId2",
-    "gsi1pk": "ORDER#DELIVERED#2020_1"
+    "PK": "ORDER#OrderId2",
+    "GSI1PK": "ORDER#DELIVERED#2020_1"
   },
   {
-    "gsi1sk": "ORDER#OrderId2",
+    "GSI1SK": "ORDER#OrderId2",
     "Data": 10,
     "Price": 5,
-    "sk": "PROD#Prod1",
-    "pk": "ORDER#OrderId2",
-    "gsi1pk": "PROD#Prod1",
+    "SK": "PROD#Prod1",
+    "PK": "ORDER#OrderId2",
+    "GSI1PK": "PROD#Prod1",
     "Name": "Product 1"
   },
   {
-    "sk": "PROD#Prod1",
-    "gsi1sk": "Product 1",
-    "pk": "PROD#Prod1",
+    "SK": "PROD#Prod1",
+    "GSI1SK": "Product 1",
+    "PK": "PROD#Prod1",
     "Data": 5,
-    "gsi1pk": "CAT#Category1"
+    "GSI1PK": "CAT#Category1"
   },
   {
-    "sk": "ORDER#OrderId1",
-    "gsi1sk": "2020-01-25T12:40:02",
+    "SK": "ORDER#OrderId1",
+    "GSI1SK": "2020-01-25T12:40:02",
     "CustomerEmail": "c1@mail.com",
-    "pk": "ORDER#OrderId1",
+    "PK": "ORDER#OrderId1",
     "Data": 19.25,
-    "gsi1pk": "ORDER#OPEN"
+    "GSI1PK": "ORDER#OPEN"
   },
   {
-    "gsi1sk": "ORDER#OrderId1",
+    "GSI1SK": "ORDER#OrderId1",
     "Data": 2,
     "Price": 5,
-    "sk": "PROD#Prod1",
-    "pk": "ORDER#OrderId1",
-    "gsi1pk": "PROD#Prod1",
+    "SK": "PROD#Prod1",
+    "PK": "ORDER#OrderId1",
+    "GSI1PK": "PROD#Prod1",
     "Name": "Product 1"
   },
   {
-    "gsi1sk": "ORDER#OrderId1",
+    "GSI1SK": "ORDER#OrderId1",
     "Data": 1,
     "Price": 9.25,
-    "sk": "PROD#Prod2",
-    "pk": "ORDER#OrderId1",
-    "gsi1pk": "PROD#Prod2",
+    "SK": "PROD#Prod2",
+    "PK": "ORDER#OrderId1",
+    "GSI1PK": "PROD#Prod2",
     "Name": "Product 2"
   },
   {
     "StreetAddress": "Sixth Street, 51",
-    "sk": "CUST#c1@mail.com",
-    "gsi1sk": "CUST#John Doe",
-    "pk": "CUST#c1@mail.com",
+    "SK": "CUST#c1@mail.com",
+    "GSI1SK": "CUST#John Doe",
+    "PK": "CUST#c1@mail.com",
     "Data": 2,
-    "gsi1pk": "CUST_ADR#USA#TX#Austin"
+    "GSI1PK": "CUST_ADR#USA#TX#Austin"
   },
   {
-    "sk": "ORDER#DELIVERED#OrderId2",
-    "gsi1sk": "2020-01-14T09:12:51",
-    "pk": "CUST#c1@mail.com",
+    "SK": "ORDER#DELIVERED#OrderId2",
+    "GSI1SK": "2020-01-14T09:12:51",
+    "PK": "CUST#c1@mail.com",
     "Data": 50,
-    "gsi1pk": "ORDER#OrderId2"
+    "GSI1PK": "ORDER#OrderId2"
   },
   {
-    "sk": "ORDER#OPEN#OrderId1",
-    "gsi1sk": "2020-01-25T12:40:02",
-    "pk": "CUST#c1@mail.com",
+    "SK": "ORDER#OPEN#OrderId1",
+    "GSI1SK": "2020-01-25T12:40:02",
+    "PK": "CUST#c1@mail.com",
     "Data": 19.25,
-    "gsi1pk": "ORDER#OrderId1"
+    "GSI1PK": "ORDER#OrderId1"
   }
 ]

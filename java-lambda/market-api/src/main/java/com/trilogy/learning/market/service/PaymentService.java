@@ -7,7 +7,6 @@ import com.trilogy.learning.market.repository.IPaymentRepository;
 import com.trilogy.learning.market.repository.ITransactionService;
 import lombok.AllArgsConstructor;
 import lombok.extern.jbosslog.JBossLog;
-import software.amazon.awssdk.services.dynamodb.model.DynamoDbException;
 import software.amazon.awssdk.services.dynamodb.model.TransactWriteItem;
 import software.amazon.awssdk.services.dynamodb.model.TransactionCanceledException;
 
