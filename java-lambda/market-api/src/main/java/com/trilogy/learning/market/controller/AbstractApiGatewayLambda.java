@@ -5,14 +5,18 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
 import com.trilogy.learning.market.model.ErrorMessage;
+import lombok.extern.jbosslog.JBossLog;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.util.Map;
 import java.util.TreeMap;
 
+@JBossLog
 abstract class AbstractApiGatewayLambda
         implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
+    private String userEmail;
+
     @Override
     public APIGatewayProxyResponseEvent handleRequest(final APIGatewayProxyRequestEvent input, final Context context) {
         final var params = input.getQueryStringParameters();
@@ -22,6 +26,8 @@ abstract class AbstractApiGatewayLambda
         }
 
         try {
+            final var cognitoClaims = (Map<String, String>)input.getRequestContext().getAuthorizer().get("claims");
+            userEmail = cognitoClaims.get("email");
             final var result = handle(caseInsensitiveParams, input.getBody());
             if (result != null) {
                 return new APIGatewayProxyResponseEvent()
@@ -38,4 +44,8 @@ abstract class AbstractApiGatewayLambda
     }
 
     protected abstract String handle(Map<String, String> queryParams, String body) throws IOException;
+
+    protected String getUserEmail() {
+        return userEmail;
+    }
 }
