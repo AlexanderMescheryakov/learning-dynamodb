@@ -6,6 +6,7 @@ gradle
 build
 node_modules
 cdk.out
+target
 
 *.js
 *.d.ts

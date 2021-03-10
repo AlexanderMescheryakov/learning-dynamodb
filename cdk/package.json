@@ -40,7 +40,9 @@
     "@aws-cdk/aws-s3-deployment": "1.90.0",
     "@aws-cdk/aws-sns-subscriptions": "1.90.0",
     "@aws-cdk/core": "1.90.0",
-    "dynamodb-import": "1.1.0"
+    "csv-stringify": "5.6.2",
+    "dynamodb-import": "1.1.0",
+    "mocker-data-generator": "2.12.0"
   },
   "jest": {
     "moduleFileExtensions": [

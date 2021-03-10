@@ -26,8 +26,12 @@ abstract class AbstractApiGatewayLambda
         }
 
         try {
-            final var cognitoClaims = (Map<String, String>)input.getRequestContext().getAuthorizer().get("claims");
-            userEmail = cognitoClaims.get("email");
+            final var authorizer = input.getRequestContext().getAuthorizer();
+            if (authorizer != null) {
+                final var cognitoClaims = (Map<String, String>)authorizer.get("claims");
+                userEmail = cognitoClaims.get("email");
+            }
+
             final var result = handle(caseInsensitiveParams, input.getBody());
             if (result != null) {
                 return new APIGatewayProxyResponseEvent()
