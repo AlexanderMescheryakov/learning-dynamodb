@@ -41,6 +41,7 @@ const RCU_MIN = 5;
 const RCU_MAX = 40000;
 const WCU_MIN = 5;
 const WCU_MAX = 40000;
+const UTILIZATION_TARGET = 80;
 
 export class AppStack extends Stack {
   private readonly props: AppStackProps;
@@ -125,16 +126,19 @@ export class AppStack extends Stack {
     table.setAutoScaling(
       { minCapacity: RCU_MIN, maxCapacity: RCU_MAX },
       { minCapacity: WCU_MIN, maxCapacity: WCU_MAX },
+      UTILIZATION_TARGET,
     );
     table.setGsiAutoScaling(
       'GSI1',
       { minCapacity: RCU_MIN, maxCapacity: RCU_MAX },
       { minCapacity: WCU_MIN, maxCapacity: WCU_MAX },
+      UTILIZATION_TARGET,
     );
     table.setGsiAutoScaling(
       'GSI2',
       { minCapacity: RCU_MIN, maxCapacity: RCU_MAX },
       { minCapacity: WCU_MIN, maxCapacity: WCU_MAX },
+      UTILIZATION_TARGET,
     );
     return table;
   }

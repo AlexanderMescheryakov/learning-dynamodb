@@ -17,7 +17,7 @@ class RestApiSimulation extends Simulation {
   private val testDuration = getProperty("DURATION", "5").toInt
   private val maxOrderedProducts = getProperty("MAX_ORDERED_PRODUCTS", "20").toInt
   private val maxOrdersPerCustomer = getProperty("MAX_ORDERS", "1").toInt
-  private val maxCategories = getProperty("MAX_CATEGORIES", "100").toInt
+  private val maxCategories = getProperty("MAX_CATEGORIES", "99").toInt
 
   private val fakeValuesService = new FakeValuesService(new Locale("en-US"), new RandomService)
 
@@ -89,10 +89,12 @@ class RestApiSimulation extends Simulation {
           .get("/products?category=${categoryName}")
           .check(jsonPath("$[1].id").saveAs("productId"))
       )
-      .exec(
-        http("Get Products by Id")
-          .get("/product?id=${productId}")
-      )
+      .doIf(session => session.contains("productId")) {
+        exec(
+          http("Get Products by Id")
+            .get("/product?id=${productId}")
+        )
+      }
     }
   }
 
@@ -117,29 +119,31 @@ class RestApiSimulation extends Simulation {
           .check(jsonPath("$.id").saveAs("orderId"))
           .check(jsonPath("$.total").saveAs("orderTotal"))
       )
-      .exec(
-        http("Get order")
-          .get("/order?id=${orderId}")
-      )
-      .exec(
-        http("Make payment")
-          .post("/payment")
-          .body(StringBody(
-            """{
-              |  "customerId": "${customerEmail}",
-              |  "orderId": "${orderId}",
-              |  "amount": ${orderTotal}
-              |}""".stripMargin)).asJson
-      )
-      .exec(
-        http("Update order status")
-          .put("/order")
-          .body(StringBody(
-            """{
-              |  "id": "${orderId}",
-              |  "status": "DELIVERED"
-              |}""".stripMargin)).asJson
-      )
+      .doIf(session => session.contains("orderId")) {
+        exec(
+          http("Get order")
+            .get("/order?id=${orderId}")
+        )
+        .exec(
+          http("Make payment")
+            .post("/payment")
+            .body(StringBody(
+              """{
+                |  "customerId": "${customerEmail}",
+                |  "orderId": "${orderId}",
+                |  "amount": ${orderTotal}
+                |}""".stripMargin)).asJson
+        )
+        .exec(
+          http("Update order status")
+            .put("/order")
+            .body(StringBody(
+              """{
+                |  "id": "${orderId}",
+                |  "status": "DELIVERED"
+                |}""".stripMargin)).asJson
+        )
+      }
     }
   }
 

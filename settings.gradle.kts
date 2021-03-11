@@ -10,6 +10,7 @@ pluginManagement {
         id("io.quarkus") version quarkusVersion
         id("org.kordamp.gradle.jandex") version "0.8.0"
         id("io.franzbecker.gradle-lombok") version "2.1"
+        id("io.freefair.aspectj.post-compile-weaving") version "5.3.0"
     }
 }
 

@@ -7,6 +7,7 @@ import lombok.extern.jbosslog.JBossLog;
 import software.amazon.awssdk.enhanced.dynamodb.*;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.StaticTableSchema;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.UpdateBehavior;
+import software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import javax.inject.Inject;
@@ -23,6 +24,7 @@ public class ProductRepository extends AbstractRepository<Product> implements IP
     static final String KEY_PREFIX = "PROD#";
     static final String CATEGORY_PREFIX = "CAT#";
     static final String OUT_OF_STOCK_MARKER = "OUT_OF_STOCK";
+    static final Integer PRODUCT_LIST_LIMIT = 25;
 
     private static final String CATEGORY_ATTRIBUTE = GSI1_PK_ATTRIBUTE;
     private static final String NAME_ATTRIBUTE = GSI1_SK_ATTRIBUTE;
@@ -92,7 +94,11 @@ public class ProductRepository extends AbstractRepository<Product> implements IP
     public List<Product> getByCategory(String category) {
         final var pk = getCategoryKey(category);
         final var products = new ArrayList<Product>();
-        productsByCategoryIndex.query(keyEqualTo(k -> k.partitionValue(pk))).stream()
+        final var query = QueryEnhancedRequest.builder()
+                .queryConditional(keyEqualTo(k -> k.partitionValue(pk)))
+                .limit(PRODUCT_LIST_LIMIT)
+                .build();
+        productsByCategoryIndex.query(query).stream().limit(PRODUCT_LIST_LIMIT)
                 .forEach(p -> products.addAll(p.items()));
         return products;
     }

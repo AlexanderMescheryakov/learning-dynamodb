@@ -83,14 +83,27 @@ export class DynamoDbTable extends Construct {
     return this.table;
   }
 
-  public setAutoScaling(readScaling: EnableScalingProps, writeScaling: EnableScalingProps): void {
-    this.table.autoScaleReadCapacity(readScaling);
-    this.table.autoScaleWriteCapacity(writeScaling);
+  public setAutoScaling(
+    readScaling: EnableScalingProps,
+    writeScaling: EnableScalingProps,
+    targetUtilizationPercent: number,
+  ): void {
+    this.table.autoScaleReadCapacity(readScaling).scaleOnUtilization({ targetUtilizationPercent });
+    this.table.autoScaleWriteCapacity(writeScaling).scaleOnUtilization({ targetUtilizationPercent });
   }
 
-  public setGsiAutoScaling(indexName: string, readScaling: EnableScalingProps, writeScaling: EnableScalingProps): void {
-    this.table.autoScaleGlobalSecondaryIndexReadCapacity(indexName, readScaling);
-    this.table.autoScaleGlobalSecondaryIndexWriteCapacity(indexName, writeScaling);
+  public setGsiAutoScaling(
+    indexName: string,
+    readScaling: EnableScalingProps,
+    writeScaling: EnableScalingProps,
+    targetUtilizationPercent: number,
+  ): void {
+    this.table
+      .autoScaleGlobalSecondaryIndexReadCapacity(indexName, readScaling)
+      .scaleOnUtilization({ targetUtilizationPercent });
+    this.table
+      .autoScaleGlobalSecondaryIndexWriteCapacity(indexName, writeScaling)
+      .scaleOnUtilization({ targetUtilizationPercent });
   }
 
   private setupTable(props: DynamoDbTableProps): Table {
