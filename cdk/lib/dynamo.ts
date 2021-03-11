@@ -3,6 +3,7 @@ import {
   AttributeType,
   BillingMode,
   CfnTable,
+  EnableScalingProps,
   ITable,
   ProjectionType,
   StreamViewType,
@@ -80,6 +81,16 @@ export class DynamoDbTable extends Construct {
 
   public getTable(): ITable {
     return this.table;
+  }
+
+  public setAutoScaling(readScaling: EnableScalingProps, writeScaling: EnableScalingProps): void {
+    this.table.autoScaleReadCapacity(readScaling);
+    this.table.autoScaleWriteCapacity(writeScaling);
+  }
+
+  public setGsiAutoScaling(indexName: string, readScaling: EnableScalingProps, writeScaling: EnableScalingProps): void {
+    this.table.autoScaleGlobalSecondaryIndexReadCapacity(indexName, readScaling);
+    this.table.autoScaleGlobalSecondaryIndexWriteCapacity(indexName, writeScaling);
   }
 
   private setupTable(props: DynamoDbTableProps): Table {

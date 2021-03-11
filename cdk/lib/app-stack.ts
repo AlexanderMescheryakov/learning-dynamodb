@@ -35,6 +35,10 @@ const LAMBDA_JVM_MEMORY = 384;
 const LAMBDA_NATIVE_MEMORY = 128;
 const QUARKUS_HANDLER = 'io.quarkus.amazon.lambda.runtime.QuarkusStreamHandler::handleRequest';
 const DYNAMODB_STREAM_HANDLER_BATCH = 25;
+const RCU_MIN = 5;
+const RCU_MAX = 40000;
+const WCU_MIN = 5;
+const WCU_MAX = 40000;
 
 export class AppStack extends Stack {
   private readonly props: AppStackProps;
@@ -108,13 +112,28 @@ export class AppStack extends Stack {
 
   private setupDynamoDbTable(): DynamoDbTable {
     const tableName = 'LearningDynamoDb';
-    return new DynamoDbTable(this, tableName, {
+    const table = new DynamoDbTable(this, tableName, {
       tableName,
       globalIndexes: [{ projected: ['PK', 'Data'] }, { projected: ['PK'] }],
       deploymentEnv: this.props.deploymentEnv,
       removalPolicy: RemovalPolicy.DESTROY,
       streamType: StreamViewType.NEW_AND_OLD_IMAGES,
     });
+    table.setAutoScaling(
+      { minCapacity: RCU_MIN, maxCapacity: RCU_MAX },
+      { minCapacity: WCU_MIN, maxCapacity: WCU_MAX },
+    );
+    table.setGsiAutoScaling(
+      'GSI1',
+      { minCapacity: RCU_MIN, maxCapacity: RCU_MAX },
+      { minCapacity: WCU_MIN, maxCapacity: WCU_MAX },
+    );
+    table.setGsiAutoScaling(
+      'GSI2',
+      { minCapacity: RCU_MIN, maxCapacity: RCU_MAX },
+      { minCapacity: WCU_MIN, maxCapacity: WCU_MAX },
+    );
+    return table;
   }
 
   private setupDynamoDbPaymentsTable(): DynamoDbTable {
