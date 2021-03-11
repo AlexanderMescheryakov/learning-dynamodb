@@ -14,8 +14,7 @@ class RestApiSimulation extends Simulation {
 
   private val userCount = getProperty("USERS", "10").toInt
   private val baseUrl = getProperty("URL", "")
-  private val testDuration = getProperty("DURATION", "1200").toInt
-  private val maxRepeat = getProperty("REPEAT", "20").toInt
+  private val testDuration = getProperty("DURATION", "5").toInt
   private val maxOrderedProducts = getProperty("MAX_ORDERED_PRODUCTS", "20").toInt
   private val maxOrdersPerCustomer = getProperty("MAX_ORDERS", "1").toInt
   private val maxCategories = getProperty("MAX_CATEGORIES", "100").toInt
@@ -146,9 +145,7 @@ class RestApiSimulation extends Simulation {
 
   private val scn = scenario("Default")
     .exec(
-      repeat(maxRepeat) {
-        customerFlow()
-      }
+      customerFlow()
     )
 
   private val httpProtocol = http
@@ -156,7 +153,10 @@ class RestApiSimulation extends Simulation {
     .acceptHeader("application/json")
 
   setUp(
-    scn.inject(atOnceUsers(userCount))
-      .protocols(httpProtocol)
-  ).maxDuration(testDuration seconds)
+    scn.inject(
+      rampConcurrentUsers(1) to (userCount) during (2 * testDuration / 3 minutes),
+      constantConcurrentUsers(userCount) during (testDuration / 3 minutes)
+    )
+    .protocols(httpProtocol)
+  ).maxDuration(testDuration minutes)
 }

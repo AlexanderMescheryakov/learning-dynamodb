@@ -1,6 +1,6 @@
 import { App, CfnOutput, Duration, RemovalPolicy, Stack, StackProps } from '@aws-cdk/core';
 import { PolicyStatement, Role, ServicePrincipal } from '@aws-cdk/aws-iam';
-import { IEventSource, IFunction, StartingPosition } from '@aws-cdk/aws-lambda';
+import { IEventSource, IFunction, StartingPosition, Tracing } from '@aws-cdk/aws-lambda';
 import { DynamoEventSource } from '@aws-cdk/aws-lambda-event-sources';
 import * as lambda from '@aws-cdk/aws-lambda';
 import * as apigateway from '@aws-cdk/aws-apigateway';
@@ -17,12 +17,14 @@ export interface LambdaProps {
   assetsPath?: string;
   nativeJavaRuntime?: boolean;
   events?: IEventSource[];
+  tracing?: boolean;
 }
 
 export interface AppStackProps extends StackProps {
   deploymentEnv: string;
   javaLambdaPath: string;
   nativeJavaRuntime: boolean;
+  tracing?: boolean;
 }
 
 export interface ApiResources {
@@ -70,6 +72,7 @@ export class AppStack extends Stack {
       },
       policyStatements: [this.lambdaPolicies],
       nativeJavaRuntime: this.props.nativeJavaRuntime,
+      tracing: this.props.tracing,
     });
 
     this.dynamoDbTable.getTable().grantReadWriteData(lambda);
@@ -212,6 +215,7 @@ export class AppStack extends Stack {
       runtime: props.nativeJavaRuntime ? lambda.Runtime.PROVIDED_AL2 : lambda.Runtime.JAVA_11,
       memorySize: props.memorySize || this.getQuarkusMemorySize(props),
       events: props.events,
+      tracing: props.tracing ? Tracing.ACTIVE : Tracing.DISABLED,
     };
 
     const func = new lambda.Function(this, lambdaName, funcProps);

@@ -4,6 +4,7 @@ plugins {
     java
     id("io.quarkus")
     id("org.kordamp.gradle.jandex")
+    id("io.freefair.aspectj.post-compile-weaving")
 }
 
 repositories {
@@ -14,12 +15,14 @@ repositories {
 dependencies {
     implementation(enforcedPlatform("io.quarkus:quarkus-universe-bom:${quarkusVersion}"))
     implementation("io.quarkus:quarkus-amazon-lambda")
+    implementation("io.quarkus:quarkus-amazon-lambda-xray")
     implementation("io.quarkus:quarkus-arc")
     implementation(platform("software.amazon.awssdk:bom:2.15.53"))
     implementation("software.amazon.awssdk:dynamodb")
     implementation("software.amazon.awssdk:dynamodb-enhanced")
     implementation("software.amazon.awssdk:sts")
     implementation("software.amazon.awssdk:url-connection-client")
+    implementation("software.amazon.lambda:powertools-metrics:1.3.0")
     implementation("com.amazonaws:aws-lambda-java-events:3.7.0")
     implementation("com.amazonaws:aws-lambda-java-events-sdk-transformer:3.0.2")
     implementation("com.amazonaws:aws-lambda-java-serialization:1.0.0")

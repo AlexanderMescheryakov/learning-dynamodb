@@ -17,6 +17,7 @@ const stack = new AppStack(app, `learning-dynamodb-${deploymentEnv}`, {
     region,
   },
   javaLambdaPath: '../java-lambda/',
+  tracing: true,
 });
 
 stack.defineStreamLambda('dynamodb-stream-handler');

@@ -1,0 +1,13 @@
+{
+  "resources": [
+    {
+      "pattern": "com/amazonaws/xray/interceptors/DefaultOperationParameterWhitelist.json$"
+    },
+    {
+      "pattern": "com/amazonaws/xray/strategy/sampling/DefaultSamplingRules.json$"
+    },
+    {
+      "pattern": "com/amazonaws/xray/sdk.properties$"
+    }
+  ]
+}
